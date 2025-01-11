@@ -226,7 +226,7 @@ jobs:
 
         for plugin in $(ls plugins); do
           pushd plugins/$plugin
-            pip install .
+            flit install
             # Note for future: some plugins may have extra reqs not covered by pip
             # (e.g. mecab uses apt-get and exports etc).  Idea for future: plugin
             # could have a .github folder as well with additional setup scripts.
