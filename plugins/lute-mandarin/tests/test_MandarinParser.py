@@ -13,21 +13,23 @@ from lute.parse.base import ParsedToken
 from lute_mandarin_parser.parser import MandarinParser
 
 
-def test_token_count(mandarin_chinese):
-    """
-    token_count checks.
-    """
-    cases = [
+@pytest.mark.parametrize(
+    "text,expected_count",
+    [
         ("我", 1),
         ("运气", 1),
         ("你说", 2),
         ("我不相信", 3),
         ("我冒了严寒 ，回到相隔二千馀里，别了二十馀年的故乡去。", 21),
-    ]
-    for text, expected_count in cases:
-        t = Term(mandarin_chinese, text)
-        assert t.token_count == expected_count, text
-        assert t.text_lc == t.text, "case"
+    ],
+)
+def test_token_count(text, expected_count, mandarin_chinese):
+    """
+    token_count checks.
+    """
+    t = Term(mandarin_chinese, text)
+    assert t.token_count == expected_count, text
+    assert t.text_lc == t.text
 
 
 def assert_tokens_equals(text, lang, expected):
