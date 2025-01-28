@@ -29,6 +29,7 @@ class LookupButton {
     this.contentLoaded = false;
 
     this.frame = createIFrame(frameName);
+    this.frame.setAttribute("sandbox", "allow-same-origin allow-scripts");
     this.btn = document.createElement("button");
     this.btn.classList.add("dict-btn");
     this.btn.onclick = () => this.do_lookup();
