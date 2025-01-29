@@ -6,21 +6,21 @@ import sys
 # grammar examples to try
 """
 selectors
-tag:m
-tag:"m"
-tag:["m"]
-tag:["m", "f"]
+tags:m
+tags:"m"
+tags:["m"]
+tags:["m", "f"]
 language:German
 has:image
 parents.count OP INT
 
 and, or, and brackets
 
-tag:["m", "f"] and has:image
-parents.count=1 and tag:["a", "b", "c"] and has:image
+tags:["m", "f"] and has:image
+parents.count=1 and tags:["a", "b", "c"] and has:image
 parents.count>7
-parents.count=1 and tag:plural and has:image and status:1
-parents.count>0 and tag:["a", "b", "c"] and has:image
+parents.count=1 and tags:plural and has:image and status:1
+parents.count>0 and tags:["a", "b", "c"] and has:image
 
 mappings
 language
@@ -68,7 +68,7 @@ list_of_values = pp.delimitedList(quotedString)
 tagvallist = Suppress("[") + list_of_values + Suppress("]")
 tagcrit = tagvallist | quoteval
 
-tag_matcher = Suppress("tag") + Suppress(":") + tagcrit
+tag_matcher = Suppress("tags") + Suppress(":") + tagcrit
 
 lang_matcher = Suppress("language") + Suppress(":") + quoteval
 
@@ -103,10 +103,10 @@ parents.count >= 2
 test_matcher("PCOUNT", parent_count_examples, parent_count_matcher)
 
 tag_examples = """
-tag:"m"
-tag:["m"]
-tag:["m", "f"]
-tag:["子供", "ko"]
+tags:"m"
+tags:["m"]
+tags:["m", "f"]
+tags:["子供", "ko"]
 """
 test_matcher("TAGS", tag_examples, tag_matcher)
 
@@ -250,8 +250,8 @@ multi_check = infixNotation(
 
 examples = """
 language:"German" and tag["der", "die", "das"] and has:image
-language:"German" and parents.count = 1 and has:image and tag:["plural", "plural and singular"]
-language:"German" and parents.count > 0 and tag:"part participle"
+language:"German" and parents.count = 1 and has:image and tags:["plural", "plural and singular"]
+language:"German" and parents.count > 0 and tags:"part participle"
 language:"German" and parents.count >= 1 and has:image
 """
 
