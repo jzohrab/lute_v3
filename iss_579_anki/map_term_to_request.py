@@ -5,8 +5,55 @@ field1: some value {{ parents }}
 field2: {{ tags }}
 field3: {{ tags["der", "die", "das"] }} {{ term }}
 field4: {{ image }}
-field5: some text {{ parents }} and some more {{ parents }}
+field5: some text {{ parents }}\nmore text {{ parents }}
+field6: {{ translation }}
 """
+
+print(test_string)
+
+import re
+
+# Define regex pattern to capture text inside {{ }}
+pattern = r"{{\s*(.*?)\s*}}"
+
+keys = set(re.findall(pattern, test_string))
+print(keys)
+
+# For each key, eval the value, build the dict
+
+plain_replacements = {
+    "term": "TERM",
+    "language": "L",
+    "parents": "P",
+    "image": "IM",
+    "translation": "T",
+}
+
+"""
+calculated_replacements = {
+    tags
+tags["m", "f", "c"]
+    }
+"""
+
+final = test_string
+for k, v in plain_replacements.items():
+    escaped = re.escape(k)
+    pattern = rf"{{{{\s*{escaped}\s*}}}}"
+    # print(f"Replacing {k} => {v} using pattern {pattern}")
+    final = re.sub(pattern, v, final)
+
+print(final)
+
+import sys
+
+sys.exit(0)
+
+
+ss = [s.strip() for s in test_string.split("\n") if s.strip() != ""]
+for s in ss:
+    matches = re.findall(pattern, s)
+    print(matches)
 
 
 ### pyparsing will mostly _not_ be useful here ... the only thing it might be useful for would be the tags
