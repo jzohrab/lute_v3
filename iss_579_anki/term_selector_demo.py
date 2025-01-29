@@ -26,7 +26,7 @@ mappings
 language
 parents
 tags
-tags in ["m", "f", "c"]
+tags["m", "f", "c"]
 image
 translation
 
