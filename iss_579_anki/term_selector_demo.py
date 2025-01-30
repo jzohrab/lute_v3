@@ -72,11 +72,6 @@ def evaluate_selector(s, term):
         pcount = len(term.parents)
         return oplambda(pcount, val)
 
-    check_tags = tag_matcher.set_parse_action(has_any_matching_tags)
-    check_lang = lang_matcher.set_parse_action(matches_lang)
-    check_image = has_matcher.set_parse_action(check_has)
-    check_parent_count = parent_count_matcher.set_parse_action(check_parent_count)
-
     class BoolNot:
         "Not unary operator."
 
@@ -119,12 +114,15 @@ def evaluate_selector(s, term):
     OR = Keyword("or")
 
     multi_check = infixNotation(
-        check_tags | check_lang | check_image | check_parent_count,
+        tag_matcher.set_parse_action(has_any_matching_tags)
+        | lang_matcher.set_parse_action(matches_lang)
+        | has_matcher.set_parse_action(check_has)
+        | parent_count_matcher.set_parse_action(check_parent_count),
         [
             (AND, 2, opAssoc.LEFT, BoolAnd),
             (OR, 2, opAssoc.LEFT, BoolOr),
         ],
-    ).setName("boolean_expression")
+    )
 
     result = multi_check.parseString(s)
     # print(f"{result}, {result[0]}")
