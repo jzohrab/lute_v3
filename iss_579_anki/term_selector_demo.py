@@ -1,39 +1,26 @@
-# DSL Parsing with pyparsing
-##### grammar
+"DSL Parsing with pyparsing"
 
-import sys
+from typing import Callable, Iterable
 
-# grammar examples to try
-"""
-selectors
-tags:m
-tags:"m"
-tags:["m"]
-tags:["m", "f"]
-language:German
-has:image
-parents.count OP INT
-
-and, or, and brackets
-
-tags:["m", "f"] and has:image
-parents.count=1 and tags:["a", "b", "c"] and has:image
-parents.count>7
-parents.count=1 and tags:plural and has:image and status:1
-parents.count>0 and tags:["a", "b", "c"] and has:image
-
-mappings
-language
-parents
-tags
-tags["m", "f", "c"]
-image
-translation
-
-"""
+import pyparsing as pp
+from pyparsing import (
+    infixNotation,
+    opAssoc,
+    Keyword,
+    Word,
+    ParserElement,
+    nums,
+    one_of,
+    quotedString,
+    QuotedString,
+    Suppress,
+    Literal,
+)
 
 
 class Term:
+    "Stub term class."
+
     def __init__(self):
         self.language = None
         self.text = None
@@ -41,25 +28,6 @@ class Term:
         self.parents = []
         self.image = None
 
-
-import pyparsing as pp
-from pyparsing import (
-    Word,
-    alphas,
-    nums,
-    one_of,
-    quotedString,
-    QuotedString,
-    infix_notation,
-    OpAssoc,
-    Suppress,
-    OneOrMore,
-    Group,
-    Optional,
-    ParseException,
-    Literal,
-    Forward,
-)
 
 quoteval = QuotedString(quoteChar='"')
 quotedString.setParseAction(pp.removeQuotes)
@@ -87,10 +55,11 @@ parent_count_matcher = (
 
 
 def test_matcher(title, examples, matcher):
-    use_examples = [
+    "Try out matchers."
+    exes = [
         ex for ex in examples.split("\n") if ex.strip() != "" and not ex.startswith("#")
     ]
-    for ex in use_examples:
+    for ex in exes:
         parsed = matcher.parseString(ex).asList()
         print(f"{title}: {ex} => {parsed}")
 
@@ -132,22 +101,23 @@ term.image = "something.jpg"
 
 
 def has_any_matching_tags(tagvals):
-    # print(f"Got vals = {tagvals}, check vs term {term.tags}")
     return any(e in term.tags for e in tagvals)
 
 
 def matches_lang(lang):
-    # print(f"Got lang = {lang}, check vs term {term.language}")
     return term.language == lang[0]
 
 
 def check_has(args):
-    # print(f"check_has, Got args = {args}, check vs term {term.image}")
-    return term.image is not None
+    "Check has:x"
+    has_item = args[0]
+    if has_item == "image":
+        return term.image is not None
+    raise RuntimeError(f"Unhandled has check for {has_item}")
 
 
 def check_parent_count(args):
-    # print(f"check parent count, args = {args}")
+    "Check parents."
     opMap = {
         "<": lambda a, b: a < b,
         "<=": lambda a, b: a <= b,
@@ -169,30 +139,12 @@ check_image = has_matcher.add_parse_action(check_has)
 check_parent_count = parent_count_matcher.add_parse_action(check_parent_count)
 
 
-from typing import Callable, Iterable
-
-from pyparsing import infixNotation, opAssoc, Keyword, Word, alphas, ParserElement
-
 ParserElement.enablePackrat()
 
 
-# define classes to be built at parse time, as each matching
-# expression type is parsed
-class BoolOperand:
-    def __init__(self, t):
-        self.label = t[0]
-        self.value = eval(t[0])
-
-    def __bool__(self) -> bool:
-        return self.value
-
-    def __str__(self) -> str:
-        return self.label
-
-    __repr__ = __str__
-
-
 class BoolNot:
+    "Not unary operator."
+
     def __init__(self, t):
         self.arg = t[0][1]
 
@@ -207,6 +159,7 @@ class BoolNot:
 
 
 class BoolBinOp:
+    "Binary operation."
     repr_symbol: str = ""
     eval_fn: Callable[[Iterable[bool]], bool] = lambda _: False
 
@@ -248,7 +201,7 @@ multi_check = infixNotation(
 ).setName("boolean_expression")
 
 
-examples = """
+final_examples = """
 language:"German" and tag["der", "die", "das"] and has:image
 language:"German" and parents.count = 1 and has:image and tags:["plural", "plural and singular"]
 language:"German" and parents.count > 0 and tags:"part participle"
@@ -256,8 +209,8 @@ language:"German" and parents.count >= 1 and has:image
 """
 
 term.parents = ["hello", "there"]
-examples = [e.strip() for e in examples.split("\n") if e.strip() != ""]
-for e in examples:
+use_examples = [e.strip() for e in final_examples.split("\n") if e.strip() != ""]
+for e in use_examples:
     result = multi_check.parseString(e)
     print(f"{e}: {result}, {result[0]}")
     print(bool(result[0]))
