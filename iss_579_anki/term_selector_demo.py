@@ -40,118 +40,98 @@ parent_count_matcher = (
 )
 
 
-class Term:
-    "Stub term class."
+def evaluate_selector(s, term):
+    "Parse the selector, return True or False for the given term."
 
-    def __init__(self):
-        self.language = None
-        self.text = None
-        self.tags = []
-        self.parents = []
-        self.image = None
+    def has_any_matching_tags(tagvals):
+        return any(e in term.tags for e in tagvals)
 
+    def matches_lang(lang):
+        return term.language == lang[0]
 
-term = Term()
-term.language = "German"
-term.tags = ["m", "x"]
-term.image = "something.jpg"
+    def check_has(args):
+        "Check has:x"
+        has_item = args[0]
+        if has_item == "image":
+            return term.image is not None
+        raise RuntimeError(f"Unhandled has check for {has_item}")
 
+    def check_parent_count(args):
+        "Check parents."
+        opMap = {
+            "<": lambda a, b: a < b,
+            "<=": lambda a, b: a <= b,
+            ">": lambda a, b: a > b,
+            ">=": lambda a, b: a >= b,
+            "!=": lambda a, b: a != b,
+            "=": lambda a, b: a == b,
+            "==": lambda a, b: a == b,
+        }
+        opstring, val = args
+        oplambda = opMap[opstring]
+        pcount = len(term.parents)
+        return oplambda(pcount, val)
 
-def has_any_matching_tags(tagvals):
-    return any(e in term.tags for e in tagvals)
+    check_tags = tag_matcher.copy().add_parse_action(has_any_matching_tags)
+    check_lang = lang_matcher.copy().add_parse_action(matches_lang)
+    check_image = has_matcher.copy().add_parse_action(check_has)
+    check_parent_count = parent_count_matcher.copy().add_parse_action(
+        check_parent_count
+    )
 
+    class BoolNot:
+        "Not unary operator."
 
-def matches_lang(lang):
-    return term.language == lang[0]
+        def __init__(self, t):
+            self.arg = t[0][1]
 
+        def __bool__(self) -> bool:
+            v = bool(self.arg)
+            return not v
 
-def check_has(args):
-    "Check has:x"
-    has_item = args[0]
-    if has_item == "image":
-        return term.image is not None
-    raise RuntimeError(f"Unhandled has check for {has_item}")
+        def __str__(self) -> str:
+            return "~" + str(self.arg)
 
+        __repr__ = __str__
 
-def check_parent_count(args):
-    "Check parents."
-    opMap = {
-        "<": lambda a, b: a < b,
-        "<=": lambda a, b: a <= b,
-        ">": lambda a, b: a > b,
-        ">=": lambda a, b: a >= b,
-        "!=": lambda a, b: a != b,
-        "=": lambda a, b: a == b,
-        "==": lambda a, b: a == b,
-    }
-    opstring, val = args
-    oplambda = opMap[opstring]
-    pcount = len(term.parents)
-    return oplambda(pcount, val)
+    class BoolBinOp:
+        "Binary operation."
+        repr_symbol: str = ""
+        eval_fn: Callable[[Iterable[bool]], bool] = lambda _: False
 
+        def __init__(self, t):
+            self.args = t[0][0::2]
 
-check_tags = tag_matcher.add_parse_action(has_any_matching_tags)
-check_lang = lang_matcher.add_parse_action(matches_lang)
-check_image = has_matcher.add_parse_action(check_has)
-check_parent_count = parent_count_matcher.add_parse_action(check_parent_count)
+        def __str__(self) -> str:
+            sep = f" {self.repr_symbol} "
+            return f"({sep.join(map(str, self.args))})"
 
+        def __bool__(self) -> bool:
+            return self.eval_fn(bool(a) for a in self.args)
 
-ParserElement.enablePackrat()
+    class BoolAnd(BoolBinOp):
+        repr_symbol = "&"
+        eval_fn = all
 
+    class BoolOr(BoolBinOp):
+        repr_symbol = "|"
+        eval_fn = any
 
-class BoolNot:
-    "Not unary operator."
+    AND = Keyword("and")
+    OR = Keyword("or")
 
-    def __init__(self, t):
-        self.arg = t[0][1]
+    multi_check = infixNotation(
+        check_tags | check_lang | check_image | check_parent_count,
+        [
+            (AND, 2, opAssoc.LEFT, BoolAnd),
+            (OR, 2, opAssoc.LEFT, BoolOr),
+        ],
+    ).setName("boolean_expression")
 
-    def __bool__(self) -> bool:
-        v = bool(self.arg)
-        return not v
-
-    def __str__(self) -> str:
-        return "~" + str(self.arg)
-
-    __repr__ = __str__
-
-
-class BoolBinOp:
-    "Binary operation."
-    repr_symbol: str = ""
-    eval_fn: Callable[[Iterable[bool]], bool] = lambda _: False
-
-    def __init__(self, t):
-        self.args = t[0][0::2]
-
-    def __str__(self) -> str:
-        sep = f" {self.repr_symbol} "
-        return f"({sep.join(map(str, self.args))})"
-
-    def __bool__(self) -> bool:
-        return self.eval_fn(bool(a) for a in self.args)
-
-
-class BoolAnd(BoolBinOp):
-    repr_symbol = "&"
-    eval_fn = all
-
-
-class BoolOr(BoolBinOp):
-    repr_symbol = "|"
-    eval_fn = any
-
-
-AND = Keyword("and")
-OR = Keyword("or")
-
-
-multi_check = infixNotation(
-    check_tags | check_lang | check_image | check_parent_count,
-    [
-        (AND, 2, opAssoc.LEFT, BoolAnd),
-        (OR, 2, opAssoc.LEFT, BoolOr),
-    ],
-).setName("boolean_expression")
+    result = multi_check.parseString(s)
+    # print(f"{result}, {result[0]}")
+    # print(bool(result[0]))
+    return bool(result[0])
 
 
 ###############
@@ -165,7 +145,7 @@ def test_matcher(title, examples, matcher):
     ]
     for ex in exes:
         parsed = matcher.parseString(ex).asList()
-        print(f"{title}: {ex} => {parsed}")
+        # print(f"{title}: {ex} => {parsed}")
 
 
 parent_count_examples = """
@@ -198,16 +178,37 @@ test_matcher("IMG", img_examples, has_matcher)
 
 # sys.exit(0)
 
+
+class Term:
+    "Stub term class."
+
+    def __init__(self):
+        self.language = None
+        self.text = None
+        self.tags = []
+        self.parents = []
+        self.image = None
+
+
+term = Term()
+term.language = "German"
+term.parents = ["hello", "there"]
+term.tags = ["der", "blah"]
+term.image = "something.jpg"
+
 final_examples = """
 language:"German" and tags:["der", "die", "das"] and has:image
+language:"German" and parents.count = 1
 language:"German" and parents.count = 1 and has:image and tags:["plural", "plural and singular"]
 language:"German" and parents.count > 0 and tags:"part participle"
 language:"German" and parents.count >= 1 and has:image
 """
-
-term.parents = ["hello", "there"]
-use_examples = [e.strip() for e in final_examples.split("\n") if e.strip() != ""]
+use_examples = [
+    e.strip()
+    for e in final_examples.split("\n")
+    if e.strip() != "" and not e.startswith("#")
+]
 for e in use_examples:
-    result = multi_check.parseString(e)
-    print(f"{e}: {result}, {result[0]}")
-    print(bool(result[0]))
+    print(e)
+    ret = evaluate_selector(e, term)
+    print(ret)
