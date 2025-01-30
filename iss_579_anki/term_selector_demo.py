@@ -18,17 +18,6 @@ from pyparsing import (
 )
 
 
-class Term:
-    "Stub term class."
-
-    def __init__(self):
-        self.language = None
-        self.text = None
-        self.tags = []
-        self.parents = []
-        self.image = None
-
-
 quoteval = QuotedString(quoteChar='"')
 quotedString.setParseAction(pp.removeQuotes)
 list_of_values = pp.delimitedList(quotedString)
@@ -50,49 +39,17 @@ parent_count_matcher = (
     Suppress("parents") + Suppress(".") + Suppress("count") + comparison_op + integer
 )
 
-###############
-# CHECKS
 
+class Term:
+    "Stub term class."
 
-def test_matcher(title, examples, matcher):
-    "Try out matchers."
-    exes = [
-        ex for ex in examples.split("\n") if ex.strip() != "" and not ex.startswith("#")
-    ]
-    for ex in exes:
-        parsed = matcher.parseString(ex).asList()
-        print(f"{title}: {ex} => {parsed}")
+    def __init__(self):
+        self.language = None
+        self.text = None
+        self.tags = []
+        self.parents = []
+        self.image = None
 
-
-parent_count_examples = """
-parents.count = 1
-parents.count > 0
-parents.count >= 2
-"""
-test_matcher("PCOUNT", parent_count_examples, parent_count_matcher)
-
-tag_examples = """
-tags:"m"
-tags:["m"]
-tags:["m", "f"]
-tags:["子供", "ko"]
-"""
-test_matcher("TAGS", tag_examples, tag_matcher)
-
-lang_examples = """
-language:"German"
-"""
-test_matcher("LANGS", lang_examples, lang_matcher)
-
-img_examples = """
-has:image
-# has:blah
-"""
-test_matcher("IMG", img_examples, has_matcher)
-
-###############
-
-# sys.exit(0)
 
 term = Term()
 term.language = "German"
@@ -184,14 +141,10 @@ class BoolOr(BoolBinOp):
     eval_fn = any
 
 
-# define keywords and simple infix notation grammar for boolean
-# expressions
 AND = Keyword("and")
 OR = Keyword("or")
 
 
-# define expression, based on expression operand and
-# list of operations in precedence order
 multi_check = infixNotation(
     check_tags | check_lang | check_image | check_parent_count,
     [
@@ -201,8 +154,52 @@ multi_check = infixNotation(
 ).setName("boolean_expression")
 
 
+###############
+# CHECKS
+
+
+def test_matcher(title, examples, matcher):
+    "Try out matchers."
+    exes = [
+        ex for ex in examples.split("\n") if ex.strip() != "" and not ex.startswith("#")
+    ]
+    for ex in exes:
+        parsed = matcher.parseString(ex).asList()
+        print(f"{title}: {ex} => {parsed}")
+
+
+parent_count_examples = """
+parents.count = 1
+parents.count > 0
+parents.count >= 2
+"""
+test_matcher("PCOUNT", parent_count_examples, parent_count_matcher)
+
+tag_examples = """
+tags:"m"
+tags:["m"]
+tags:["m", "f"]
+tags:["子供", "ko"]
+"""
+test_matcher("TAGS", tag_examples, tag_matcher)
+
+lang_examples = """
+language:"German"
+"""
+test_matcher("LANGS", lang_examples, lang_matcher)
+
+img_examples = """
+has:image
+# has:blah
+"""
+test_matcher("IMG", img_examples, has_matcher)
+
+###############
+
+# sys.exit(0)
+
 final_examples = """
-language:"German" and tag["der", "die", "das"] and has:image
+language:"German" and tags:["der", "die", "das"] and has:image
 language:"German" and parents.count = 1 and has:image and tags:["plural", "plural and singular"]
 language:"German" and parents.count > 0 and tags:"part participle"
 language:"German" and parents.count >= 1 and has:image
