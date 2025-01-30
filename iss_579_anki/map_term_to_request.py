@@ -10,6 +10,7 @@ from pyparsing import (
 
 
 test_string = """\
+fid: {{ id }}
 field0: {{ term }}
 field1: some value {{ parents }}
 field2: {{ tags }}
@@ -30,6 +31,7 @@ print(keys)
 # For each key, eval the value, build the dict
 
 plain_replacements = {
+    "id": "ID",
     "term": "TERM",
     "language": "L",
     "parents": "P",

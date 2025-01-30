@@ -45,6 +45,38 @@ post_dict = """
 }
 """
 
+post_dict = """
+{
+  "action": "multi",
+  "params": {
+    "actions": [
+      {
+        "action": "storeMediaFile",
+        "params": {
+          "filename": "example.png",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Example.png"
+        }
+      },
+      {
+        "action": "addNote",
+        "params": {
+          "note": {
+            "deckName": "zzTestAnkiConnect", 
+            "modelName": "Basic_vocab", 
+            "fields": { 
+              "Word": "xx2", 
+              "Definition": "Wikipedia",
+              "Picture": "<img src='example.png'>"
+            }, 
+            "tags": []
+          }
+        }
+      }
+    ]
+  }
+}
+"""
+
 print(post_dict)
 
 payload = json.loads(post_dict)
@@ -55,12 +87,14 @@ print(payload)
 ANKI_CONNECT_URL = "http://localhost:8765"
 ret = requests.post(ANKI_CONNECT_URL, json=payload, timeout=5)
 rj = ret.json()
-if rj["error"] is not None:
-    print("ERR")
-    print(rj)
-else:
-    print("ok???")
-    print(rj)
+print(rj)
+
+# if rj["error"] is not None:
+#     print("ERR")
+#     print(rj)
+# else:
+#     print("ok???")
+#     print(rj)
 
 
 # From https://foosoft.net/projects/anki-connect/
