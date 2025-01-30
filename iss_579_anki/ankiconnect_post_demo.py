@@ -1,13 +1,13 @@
-import requests
+"Sample posting to ankiconnect"
+
 import json
+import requests
 
 # Config needed:
 # enabled - bool
 # apiKey - optional
 # webBindAddress - default 127.0.0.1
 # webBindPort - default 8765
-
-ANKI_CONNECT_URL = "http://localhost:8765"
 
 post_dict = """
 {
@@ -52,10 +52,11 @@ print(payload)
 # import sys
 # sys.exit(0)
 
-ret = requests.post(ANKI_CONNECT_URL, json=payload)
+ANKI_CONNECT_URL = "http://localhost:8765"
+ret = requests.post(ANKI_CONNECT_URL, json=payload, timeout=5)
 rj = ret.json()
-if rj["error"] != None:
-    print("ERRR")
+if rj["error"] is not None:
+    print("ERR")
     print(rj)
 else:
     print("ok???")
@@ -71,7 +72,7 @@ else:
 ###
 ### def invoke(action, **params):
 ###     requestJson = json.dumps(request(action, **params)).encode('utf-8')
-###     response = json.load(urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8765', requestJson)))
+###     response = ... use requests here ...
 ###     if len(response) != 2:
 ###         raise Exception('response has an unexpected number of fields')
 ###     if 'error' not in response:
