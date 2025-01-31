@@ -15,7 +15,7 @@ def build_ankiconnect_post_json(
 ):
     "Build post json for term using the mappings."
 
-    def parse_keys_needing_calculation(calculate_keys):
+    def parse_keys_needing_calculation(calculate_keys, post_actions):
         """
         Build a parser for some keys in the mapping string.
 
@@ -63,7 +63,11 @@ def build_ankiconnect_post_json(
             k: matcher.parseString(k).asList()[0]
             for k in calculate_keys
         }
-        return [calc_replacements, media_actions]
+
+        post_actions.append(
+            [{"action": "storeMediaFile", "params": p} for p in media_actions]
+        )
+        return calc_replacements
 
     # One-for-one replacements in the mapping string.
     # e.g. "{{ id }}" is replaced by term.termid.
@@ -76,12 +80,14 @@ def build_ankiconnect_post_json(
         "translation": term.translation,
     }
 
+    post_actions = []
+
     calc_keys = [
         k
         for k in set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
         if k not in replacements
     ]
-    calc_replacements, media_actions = parse_keys_needing_calculation(calc_keys)
+    calc_replacements = parse_keys_needing_calculation(calc_keys, post_actions)
 
     def get_field_mapping_json(map_string, replacements):
         final = map_string
@@ -96,8 +102,7 @@ def build_ankiconnect_post_json(
             postjson[field.strip()] = val.strip()
         return postjson
 
-    all_actions = [{"action": "storeMediaFile", "params": p} for p in media_actions]
-    all_actions.append(
+    post_actions.append(
         {
             "action": "addNote",
             "params": {
@@ -113,7 +118,7 @@ def build_ankiconnect_post_json(
         }
     )
 
-    return {"action": "multi", "params": {"actions": all_actions}}
+    return {"action": "multi", "params": {"actions": post_actions}}
 
 
 class Term:
