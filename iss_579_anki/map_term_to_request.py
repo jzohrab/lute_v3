@@ -165,7 +165,7 @@ print(json.dumps(full_post, indent=2))
 print("=" * 25)
 
 
-ANKI_CONNECT_URL = "http://localhost:8765"
-ret = requests.post(ANKI_CONNECT_URL, json=full_post, timeout=5)
-rj = ret.json()
-print(rj)
+# ANKI_CONNECT_URL = "http://localhost:8765"
+# ret = requests.post(ANKI_CONNECT_URL, json=full_post, timeout=5)
+# rj = ret.json()
+# print(rj)
