@@ -46,9 +46,6 @@ def build_ankiconnect_post_json(
         get_filtered_tags
     ) | image_matcher.set_parse_action(handle_image)
 
-    pattern = r"{{\s*(.*?)\s*}}"
-    keys = set(re.findall(pattern, mapping_string))
-
     # One-for-one replacements in the mapping string.
     # e.g. "{{ id }}" is replaced by term.termid.
     replacements = {
@@ -60,12 +57,13 @@ def build_ankiconnect_post_json(
         "translation": term.translation,
     }
 
+    all_keys = set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
     calc_replacements = {
         # Matchers return the value that should be used as the
         # replacement value for the given mapping string.  e.g.
         # tags["der", "die"] returns "der" if term.tags = ["der", "x"]
         k: matcher.parseString(k).asList()[0]
-        for k in keys
+        for k in all_keys
         if k not in replacements
     }
 
