@@ -73,9 +73,7 @@ def build_ankiconnect_post_json(
 
     final = mapping_string
     for k, v in replacements.items():
-        escaped = re.escape(k)
-        pattern = rf"{{{{\s*{escaped}\s*}}}}"
-        # print(f"Replacing {k} => {v} using pattern {pattern}")
+        pattern = rf"{{{{\s*{re.escape(k)}\s*}}}}"
         final = re.sub(pattern, f"{v}", final)
 
     postjson = {}
@@ -141,7 +139,7 @@ test_string = """\
 Extra_info_back: {{ id }}
 Word: {{ term }}
 Plural: some value {{ parents }}
-Article: {{ tags["der", "die", "das"] }} {{ term }}
+Article: {{ tags["der", "die", "das"] }}: {{ term }}
 Picture: {{ image }}
 Sentence: some text {{ parents }} more text {{ parents }}
 Definition: {{ translation }}
@@ -154,8 +152,8 @@ print("=" * 25)
 print(json.dumps(p, indent=2))
 print("=" * 25)
 
-do_post = False
 
+do_post = False
 if do_post:
     ANKI_CONNECT_URL = "http://localhost:8765"
     ret = requests.post(ANKI_CONNECT_URL, json=p, timeout=5)
