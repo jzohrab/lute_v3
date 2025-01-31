@@ -55,7 +55,7 @@ def build_ankiconnect_post_json(
 
     # One-for-one replacements in the mapping string.
     # e.g. "{{ id }}" is replaced by term.termid.
-    plain_replacements = {
+    replacements = {
         "id": term.termid,
         "term": term.text,
         "language": term.language,
@@ -64,16 +64,12 @@ def build_ankiconnect_post_json(
         "translation": term.translation,
     }
 
-    calc_required = [k for k in keys if k not in plain_replacements]
-
-    calc_replacements = {}
-
-    for c in calc_required:
-        parse_result = matcher.parseString(c).asList()
-        calc_replacements[c] = parse_result[0]
+    calc_replacements = {
+        k: matcher.parseString(k).asList()[0] for k in keys if k not in replacements
+    }
     # print(calc_replacements)
 
-    replacements = {**plain_replacements, **calc_replacements}
+    replacements = {**replacements, **calc_replacements}
 
     final = mapping_string
     for k, v in replacements.items():
