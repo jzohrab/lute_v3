@@ -15,11 +15,7 @@ def build_ankiconnect_post_json(
 ):
     "Build post json for term using the mappings."
 
-    # List of ankiconnect "media actions" (file uploads) to execute.
-    # Appended to during handle_image().
-    media_actions = []
-
-    def build_key_parser():
+    def parse_keys_needing_calculation(calculate_keys):
         """
         Build a parser for some keys in the mapping string.
 
@@ -28,6 +24,10 @@ def build_ankiconnect_post_json(
         term.
 
         """
+
+        # List of ankiconnect "media actions" (file uploads) to execute.
+        # Appended to during handle_image().
+        media_actions = []
 
         def get_filtered_tags(tagvals):
             "Get term tags matching the list."
@@ -56,7 +56,14 @@ def build_ankiconnect_post_json(
             get_filtered_tags
         ) | image_matcher.set_parse_action(handle_image)
 
-        return matcher
+        calc_replacements = {
+            # Matchers return the value that should be used as the
+            # replacement value for the given mapping string.  e.g.
+            # tags["der", "die"] returns "der" if term.tags = ["der", "x"]
+            k: matcher.parseString(k).asList()[0]
+            for k in calculate_keys
+        }
+        return [calc_replacements, media_actions]
 
     # One-for-one replacements in the mapping string.
     # e.g. "{{ id }}" is replaced by term.termid.
@@ -69,16 +76,12 @@ def build_ankiconnect_post_json(
         "translation": term.translation,
     }
 
-    all_keys = set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
-    parser = build_key_parser()
-    calc_replacements = {
-        # Matchers return the value that should be used as the
-        # replacement value for the given mapping string.  e.g.
-        # tags["der", "die"] returns "der" if term.tags = ["der", "x"]
-        k: parser.parseString(k).asList()[0]
-        for k in all_keys
+    calc_keys = [
+        k
+        for k in set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
         if k not in replacements
-    }
+    ]
+    calc_replacements, media_actions = parse_keys_needing_calculation(calc_keys)
 
     def get_field_mapping_json(map_string, replacements):
         final = map_string
