@@ -17,17 +17,15 @@ def build_ankiconnect_post_json(
 
     def parse_keys_needing_calculation(calculate_keys, post_actions):
         """
-        Build a parser for some keys in the mapping string.
+        Build a parser for some keys in the mapping string, return
+        calculated value to use in the mapping.  SIDE EFFECT:
+        adds ankiconnect post actions to post_actions if needed
+        (e.g. for image uploads).
 
         e.g. the mapping "article: {{ tags["der", "die", "das"] }}"
         needs to be parsed to extract certain tags from the current
         term.
-
         """
-
-        # List of ankiconnect "media actions" (file uploads) to execute.
-        # Appended to during handle_image().
-        media_actions = []
 
         def get_filtered_tags(tagvals):
             "Get term tags matching the list."
@@ -39,8 +37,11 @@ def build_ankiconnect_post_json(
             if term.image is None:
                 return ""
             new_filename = f"LUTE_TERM_{term.termid}.jpg"
-            hsh = {"filename": new_filename, "path": img_root_dir + term.image}
-            media_actions.append(hsh)
+            hsh = {
+                "action": "storeMediaFile",
+                "params": {"filename": new_filename, "path": img_root_dir + term.image},
+            }
+            post_actions.append(hsh)
             return f'<img src="{new_filename}">'
 
         quotedString.setParseAction(pp.removeQuotes)
@@ -64,9 +65,6 @@ def build_ankiconnect_post_json(
             for k in calculate_keys
         }
 
-        post_actions.append(
-            [{"action": "storeMediaFile", "params": p} for p in media_actions]
-        )
         return calc_replacements
 
     # One-for-one replacements in the mapping string.
@@ -80,21 +78,21 @@ def build_ankiconnect_post_json(
         "translation": term.translation,
     }
 
-    post_actions = []
-
     calc_keys = [
         k
         for k in set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
         if k not in replacements
     ]
+
+    post_actions = []
     calc_replacements = parse_keys_needing_calculation(calc_keys, post_actions)
 
     def get_field_mapping_json(map_string, replacements):
+        "Apply the replacements in the mapping string, return field: value json."
         final = map_string
         for k, v in replacements.items():
             pattern = rf"{{{{\s*{re.escape(k)}\s*}}}}"
             final = re.sub(pattern, f"{v}", final)
-
         postjson = {}
         mappings = [s.strip() for s in final.split("\n") if s.strip() != ""]
         for s in mappings:
