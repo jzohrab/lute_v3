@@ -179,6 +179,7 @@ class Term:
     "Stub term class."
 
     def __init__(self):
+        self.termid = None
         self.language = None
         self.text = None
         self.tags = []
