@@ -15,36 +15,48 @@ def build_ankiconnect_post_json(
 ):
     "Build post json for term using the mappings."
 
-    def get_filtered_tags(tagvals):
-        "Get term tags matching the list."
-        # tagvals is a pyparsing ParseResults, use list() to convert to strings.
-        ftags = [t for t in term.tags if t in list(tagvals)]
-        return ", ".join(ftags)
-
     # List of ankiconnect "media actions" (file uploads) to execute.
     # Appended to during handle_image().
     media_actions = []
 
-    def handle_image(_):
-        if term.image is None:
-            return ""
-        new_filename = f"LUTE_TERM_{term.termid}.jpg"
-        hsh = {"filename": new_filename, "path": img_root_dir + term.image}
-        media_actions.append(hsh)
-        return f'<img src="{new_filename}">'
+    def build_key_parser():
+        """
+        Build a parser for some keys in the mapping string.
 
-    quotedString.setParseAction(pp.removeQuotes)
-    tag_matcher = (
-        Suppress("tags")
-        + Suppress("[")
-        + pp.delimitedList(quotedString)
-        + Suppress("]")
-    )
-    image_matcher = Suppress("image")
+        e.g. the mapping "article: {{ tags["der", "die", "das"] }}"
+        needs to be parsed to extract certain tags from the current
+        term.
 
-    matcher = tag_matcher.set_parse_action(
-        get_filtered_tags
-    ) | image_matcher.set_parse_action(handle_image)
+        """
+
+        def get_filtered_tags(tagvals):
+            "Get term tags matching the list."
+            # tagvals is a pyparsing ParseResults, use list() to convert to strings.
+            ftags = [t for t in term.tags if t in list(tagvals)]
+            return ", ".join(ftags)
+
+        def handle_image(_):
+            if term.image is None:
+                return ""
+            new_filename = f"LUTE_TERM_{term.termid}.jpg"
+            hsh = {"filename": new_filename, "path": img_root_dir + term.image}
+            media_actions.append(hsh)
+            return f'<img src="{new_filename}">'
+
+        quotedString.setParseAction(pp.removeQuotes)
+        tag_matcher = (
+            Suppress("tags")
+            + Suppress("[")
+            + pp.delimitedList(quotedString)
+            + Suppress("]")
+        )
+        image_matcher = Suppress("image")
+
+        matcher = tag_matcher.set_parse_action(
+            get_filtered_tags
+        ) | image_matcher.set_parse_action(handle_image)
+
+        return matcher
 
     # One-for-one replacements in the mapping string.
     # e.g. "{{ id }}" is replaced by term.termid.
@@ -58,11 +70,12 @@ def build_ankiconnect_post_json(
     }
 
     all_keys = set(re.findall(r"{{\s*(.*?)\s*}}", mapping_string))
+    parser = build_key_parser()
     calc_replacements = {
         # Matchers return the value that should be used as the
         # replacement value for the given mapping string.  e.g.
         # tags["der", "die"] returns "der" if term.tags = ["der", "x"]
-        k: matcher.parseString(k).asList()[0]
+        k: parser.parseString(k).asList()[0]
         for k in all_keys
         if k not in replacements
     }
