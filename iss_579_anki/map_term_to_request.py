@@ -69,18 +69,18 @@ def build_ankiconnect_post_json(
         if k not in replacements
     }
 
-    replacements = {**replacements, **calc_replacements}
+    def get_field_mapping_json(map_string, replacements):
+        final = map_string
+        for k, v in replacements.items():
+            pattern = rf"{{{{\s*{re.escape(k)}\s*}}}}"
+            final = re.sub(pattern, f"{v}", final)
 
-    final = mapping_string
-    for k, v in replacements.items():
-        pattern = rf"{{{{\s*{re.escape(k)}\s*}}}}"
-        final = re.sub(pattern, f"{v}", final)
-
-    postjson = {}
-    mappings = [s.strip() for s in final.split("\n") if s.strip() != ""]
-    for s in mappings:
-        field, val = s.split(":", 1)
-        postjson[field.strip()] = val.strip()
+        postjson = {}
+        mappings = [s.strip() for s in final.split("\n") if s.strip() != ""]
+        for s in mappings:
+            field, val = s.split(":", 1)
+            postjson[field.strip()] = val.strip()
+        return postjson
 
     all_actions = [{"action": "storeMediaFile", "params": p} for p in media_actions]
     all_actions.append(
@@ -90,7 +90,9 @@ def build_ankiconnect_post_json(
                 "note": {
                     "deckName": deck_name,
                     "modelName": model_name,
-                    "fields": postjson,
+                    "fields": get_field_mapping_json(
+                        mapping_string, {**replacements, **calc_replacements}
+                    ),
                     "tags": ["lute"] + term.tags,
                 }
             },
