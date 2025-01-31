@@ -15,26 +15,6 @@ def build_ankiconnect_post_json(
 ):
     "Build post json for term using the mappings."
 
-    # capture text inside {{ }}
-    pattern = r"{{\s*(.*?)\s*}}"
-    keys = set(re.findall(pattern, mapping_string))
-    # print(keys)
-
-    media_actions = []
-
-    # For each key, eval the value, build the dict
-    plain_replacements = {
-        "id": term.termid,
-        "term": term.text,
-        "language": term.language,
-        "parents": ", ".join(term.parents),
-        "tags": ", ".join(term.tags),
-        "translation": term.translation,
-    }
-
-    calc_required = [k for k in keys if k not in plain_replacements]
-    # print(calc_required)
-
     def get_filtered_tags(tagvals):
         "Get tags matching the spec."
         # tagvals is a pyparsing ParseResults, convert to strings.
@@ -42,6 +22,10 @@ def build_ankiconnect_post_json(
         ftags = [t for t in term.tags if t in real_tagvals]
         # print(f"got filtered tags {ftags}")
         return ", ".join(ftags)
+
+    # List of ankiconnect "media actions" (file uploads) to execute.
+    # Appended to during handle_image().
+    media_actions = []
 
     def handle_image(_):
         if term.image is None:
@@ -65,6 +49,22 @@ def build_ankiconnect_post_json(
     matcher = tag_matcher.set_parse_action(
         get_filtered_tags
     ) | image_matcher.set_parse_action(handle_image)
+
+    pattern = r"{{\s*(.*?)\s*}}"
+    keys = set(re.findall(pattern, mapping_string))
+
+    # One-for-one replacements in the mapping string.
+    # e.g. "{{ id }}" is replaced by term.termid.
+    plain_replacements = {
+        "id": term.termid,
+        "term": term.text,
+        "language": term.language,
+        "parents": ", ".join(term.parents),
+        "tags": ", ".join(term.tags),
+        "translation": term.translation,
+    }
+
+    calc_required = [k for k in keys if k not in plain_replacements]
 
     calc_replacements = {}
 
