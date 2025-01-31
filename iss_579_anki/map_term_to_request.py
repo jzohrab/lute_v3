@@ -16,11 +16,9 @@ def build_ankiconnect_post_json(
     "Build post json for term using the mappings."
 
     def get_filtered_tags(tagvals):
-        "Get tags matching the spec."
-        # tagvals is a pyparsing ParseResults, convert to strings.
-        real_tagvals = list(tagvals)
-        ftags = [t for t in term.tags if t in real_tagvals]
-        # print(f"got filtered tags {ftags}")
+        "Get term tags matching the list."
+        # tagvals is a pyparsing ParseResults, use list() to convert to strings.
+        ftags = [t for t in term.tags if t in list(tagvals)]
         return ", ".join(ftags)
 
     # List of ankiconnect "media actions" (file uploads) to execute.
@@ -30,8 +28,6 @@ def build_ankiconnect_post_json(
     def handle_image(_):
         if term.image is None:
             return ""
-
-        # print(f"handling image with args: {args}")
         new_filename = f"LUTE_TERM_{term.termid}.jpg"
         hsh = {"filename": new_filename, "path": img_root_dir + term.image}
         media_actions.append(hsh)
@@ -65,9 +61,13 @@ def build_ankiconnect_post_json(
     }
 
     calc_replacements = {
-        k: matcher.parseString(k).asList()[0] for k in keys if k not in replacements
+        # Matchers return the value that should be used as the
+        # replacement value for the given mapping string.  e.g.
+        # tags["der", "die"] returns "der" if term.tags = ["der", "x"]
+        k: matcher.parseString(k).asList()[0]
+        for k in keys
+        if k not in replacements
     }
-    # print(calc_replacements)
 
     replacements = {**replacements, **calc_replacements}
 
@@ -79,7 +79,6 @@ def build_ankiconnect_post_json(
     postjson = {}
     mappings = [s.strip() for s in final.split("\n") if s.strip() != ""]
     for s in mappings:
-        # print(f"handling '{s}'")
         field, val = s.split(":", 1)
         postjson[field.strip()] = val.strip()
 
