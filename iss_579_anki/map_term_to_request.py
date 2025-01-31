@@ -82,14 +82,6 @@ def build_ankiconnect_post_json(
         field, val = s.split(":", 1)
         postjson[field.strip()] = val.strip()
 
-    # print("=" * 25)
-    # print(final)
-    # print("=" * 25)
-    # print(postjson)
-    # print("=" * 25)
-    # print(media_actions)
-    # print("=" * 25)
-
     all_actions = [{"action": "storeMediaFile", "params": p} for p in media_actions]
     all_actions.append(
         {
